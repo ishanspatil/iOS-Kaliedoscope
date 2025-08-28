@@ -41,7 +41,13 @@
     .btn:active { transform: translateY(1px); }
 
     /* Shutter */
-    .shutter-wrap { position: absolute; left: 0; right: 0; bottom: 24px; display:flex; justify-content:center; z-index: 10; }
+    .shutter-wrap {
+      position: absolute;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
     .shutter { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.25); display:grid; place-items:center; box-shadow: 0 8px 30px rgba(0,0,0,0.5); backdrop-filter: blur(6px); }
     .shutter-inner { width: 60px; height: 60px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.06); }
     .shutter:active .shutter-inner { transform: scale(0.96); }
