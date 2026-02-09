@@ -9,6 +9,9 @@
       --ui-bg: rgba(10,10,10,0.55);
       --ui-fg: #fff;
       --accent: #fff;
+      --pill-bg: rgba(35,35,35,0.92);
+      --pill-border: rgba(255,255,255,0.08);
+      --blue: #2d7dff;
     }
     html, body {
       margin: 0; height: 100%; background: #000; color: var(--ui-fg);
@@ -24,27 +27,66 @@
     /* Top controls bar (excluded from capture since we export canvas only) */
     .topbar {
       position: absolute; top: 0; left: 0; right: 0; z-index: 10;
-      display: flex; gap: 10px; align-items: center; padding: 8px 12px;
-      background: var(--ui-bg); backdrop-filter: blur(6px);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0));
+      backdrop-filter: blur(8px);
     }
-    .topbar .group { display:flex; align-items:center; gap:8px; }
-    .label { font-size: 12px; opacity: 0.85; white-space: nowrap; }
-    input[type="range"] { width: 120px; }
+    .topbar .group { display:flex; align-items:center; gap:10px; }
+    .label { font-size: 12px; opacity: 0.85; white-space: nowrap; letter-spacing: 0.02em; }
+    .title { font-weight: 600; font-size: 13px; opacity: 0.9; }
     .toggle { appearance: none; width: 36px; height: 22px; border-radius: 999px; position: relative; outline: none; cursor: pointer; background: #444; transition: background .2s; }
-    .toggle:checked { background: #06f; }
+    .toggle:checked { background: var(--blue); }
     .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background:#fff; border-radius:50%; transition: left .2s; }
     .toggle:checked::after { left: 17px; }
 
-    /* Right-side buttons */
-    .side { position:absolute; right: 12px; top: 56px; z-index: 10; display:flex; flex-direction:column; gap:10px; }
-    .btn { background: var(--ui-bg); color: var(--ui-fg); border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; border-radius: 12px; cursor: pointer; font-size: 14px; }
+    .btn { background: rgba(20,20,20,0.75); color: var(--ui-fg); border: 1px solid rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 12px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
     .btn:active { transform: translateY(1px); }
+
+    .segments-pill {
+      position: absolute;
+      right: 12px;
+      top: 64px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px;
+      border-radius: 18px;
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    }
+    .segments-pill button {
+      width: 38px;
+      height: 34px;
+      border-radius: 14px;
+      border: none;
+      color: rgba(255,255,255,0.75);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .segments-pill button.active {
+      background: rgba(45,125,255,0.25);
+      color: #e6f0ff;
+      box-shadow: inset 0 0 0 1px rgba(45,125,255,0.5);
+    }
+    .segments-pill .pill-label {
+      font-size: 11px;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: center;
+      margin-bottom: 2px;
+    }
 
     /* Shutter */
     .shutter-wrap {
       position: absolute;
       left: 50%;
-      bottom: 24px;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
       transform: translateX(-50%);
       z-index: 10;
     }
@@ -53,12 +95,11 @@
     .shutter:active .shutter-inner { transform: scale(0.96); }
 
     /* Help hint at the top-left */
-    .hint { position:absolute; left:12px; top:56px; z-index:10; font-size:12px; opacity:.7; background: var(--ui-bg); padding:6px 8px; border-radius: 8px; }
+    .hint { position:absolute; left:12px; top:60px; z-index:10; font-size:12px; opacity:.75; background: rgba(0,0,0,0.55); padding:6px 8px; border-radius: 10px; }
 
     @media (max-width: 480px) {
       .topbar { flex-wrap: wrap; gap:6px; }
-      input[type="range"] { width: 100px; }
-      .side { top: 60px; }
+      .segments-pill { top: 70px; }
       .hint { display:none; }
     }
   </style>
@@ -74,32 +115,27 @@
     <!-- UI overlays (won't be in captures since we export canvas pixels) -->
     <div class="topbar" id="controls">
       <div class="group">
-        <span class="label">Segments</span>
-        <input id="segments" type="range" min="2" max="24" step="1" value="8" />
-        <span id="segmentsVal" class="label">8</span>
-      </div>
-      <div class="group">
-        <span class="label">Angle</span>
-        <input id="angle" type="range" min="0" max="360" step="1" value="0" />
-        <span id="angleVal" class="label">0°</span>
-      </div>
-      <div class="group">
+        <span class="title">Kaleidoscope</span>
+        <span class="label">Zoom <strong id="zoomVal">1.20×</strong></span>
         <span class="label">Mirror</span>
         <input id="mirror" class="toggle" type="checkbox" checked />
       </div>
       <div class="group">
-        <span class="label">Zoom</span>
-        <input id="zoom" type="range" min="1" max="3" step="0.01" value="1.2" />
-        <span id="zoomVal" class="label">1.20×</span>
+        <button id="fsBtn" class="btn" title="Toggle Fullscreen">⤢ Fullscreen</button>
+        <button id="flipBtn" class="btn" title="Switch camera">⇄ Flip</button>
       </div>
     </div>
 
-    <div class="side">
-      <button id="fsBtn" class="btn" title="Toggle Fullscreen">⤢ Fullscreen</button>
-      <button id="flipBtn" class="btn" title="Switch camera">⇄ Flip</button>
+    <div class="segments-pill" id="segmentsPill" role="group" aria-label="Segments">
+      <div class="pill-label">Segments</div>
+      <button type="button" data-value="6">6</button>
+      <button type="button" data-value="8">8</button>
+      <button type="button" data-value="10">10</button>
+      <button type="button" data-value="12">12</button>
+      <button type="button" data-value="16">16</button>
     </div>
 
-    <div class="hint">Tip: tap Fullscreen for an immersive view. Captures exclude these controls.</div>
+    <div class="hint">Pinch with two fingers to zoom. Captures exclude controls.</div>
 
     <div class="shutter-wrap">
       <button id="shutter" class="shutter" title="Capture photo" aria-label="Capture photo">
@@ -118,28 +154,20 @@
     const shutter = document.getElementById('shutter');
 
     // Controls
-    const segmentsEl = document.getElementById('segments');
-    const angleEl = document.getElementById('angle');
+    const segmentsPill = document.getElementById('segmentsPill');
     const mirrorEl = document.getElementById('mirror');
-    const zoomEl = document.getElementById('zoom');
-
-    const segmentsVal = document.getElementById('segmentsVal');
-    const angleVal = document.getElementById('angleVal');
     const zoomVal = document.getElementById('zoomVal');
 
     let facingMode = 'environment';
     let stream = null;
 
     const state = {
-      segments: +segmentsEl.value,
-      angle: +angleEl.value * Math.PI / 180,
+      segments: 8,
       mirror: mirrorEl.checked,
-      zoom: +zoomEl.value
+      zoom: 1.2
     };
 
     function updateLabels(){
-      segmentsVal.textContent = state.segments;
-      angleVal.textContent = Math.round(state.angle * 180/Math.PI) + '°';
       zoomVal.textContent = state.zoom.toFixed(2) + '×';
     }
 
@@ -194,7 +222,7 @@
 
       const slices = Math.max(2, Math.floor(state.segments));
       const theta = (Math.PI * 2) / slices;
-      const baseRot = state.angle; // radians
+      const baseRot = 0;
 
       // Source square from video
       const s = Math.min(vw, vh) / state.zoom;
@@ -268,10 +296,13 @@
     }
 
     // Wire controls
-    segmentsEl.addEventListener('input', e => { state.segments = +e.target.value; updateLabels(); });
-    angleEl.addEventListener('input', e => { state.angle = (+e.target.value) * Math.PI / 180; updateLabels(); });
     mirrorEl.addEventListener('change', e => { state.mirror = !!e.target.checked; });
-    zoomEl.addEventListener('input', e => { state.zoom = +e.target.value; updateLabels(); });
+    segmentsPill.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-value]');
+      if (!btn) return;
+      state.segments = +btn.dataset.value;
+      updateSegmentButtons();
+    });
 
     fsBtn.addEventListener('click', toggleFullscreen);
     flipBtn.addEventListener('click', async () => {
@@ -285,19 +316,55 @@
     const stage = document.getElementById('stage');
     const controls = document.getElementById('controls');
     let controlsVisible = true;
+    const hint = document.querySelector('.hint');
     stage.addEventListener('click', (e) => {
-      if (e.target.closest('#shutter') || e.target.closest('.side') || e.target.closest('.topbar')) return; // ignore UI taps
+      if (e.target.closest('#shutter') || e.target.closest('.topbar') || e.target.closest('.segments-pill')) return; // ignore UI taps
       controlsVisible = !controlsVisible;
       controls.style.display = controlsVisible ? 'flex' : 'none';
+      segmentsPill.style.display = controlsVisible ? 'flex' : 'none';
+      hint.style.display = controlsVisible ? 'block' : 'none';
     });
+
+    let pinchStartDistance = null;
+    let pinchStartZoom = state.zoom;
+    function getTouchDistance(touches){
+      const [a,b] = touches;
+      const dx = a.clientX - b.clientX;
+      const dy = a.clientY - b.clientY;
+      return Math.hypot(dx, dy);
+    }
+    stage.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        pinchStartDistance = getTouchDistance(e.touches);
+        pinchStartZoom = state.zoom;
+      }
+    }, { passive: true });
+    stage.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 2 || pinchStartDistance === null) return;
+      const current = getTouchDistance(e.touches);
+      const scale = current / pinchStartDistance;
+      state.zoom = Math.min(3, Math.max(1, pinchStartZoom * scale));
+      updateLabels();
+    }, { passive: true });
+    stage.addEventListener('touchend', () => {
+      if (pinchStartDistance !== null) pinchStartDistance = null;
+    }, { passive: true });
 
     window.addEventListener('resize', fitCanvas);
 
     // Kickoff
     fitCanvas();
     updateLabels();
+    updateSegmentButtons();
     startCamera();
     requestAnimationFrame(render);
+
+    function updateSegmentButtons(){
+      segmentsPill.querySelectorAll('button[data-value]').forEach(btn => {
+        const isActive = +btn.dataset.value === state.segments;
+        btn.classList.toggle('active', isActive);
+      });
+    }
   })();
   </script>
 </body>
