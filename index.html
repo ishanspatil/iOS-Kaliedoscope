@@ -4,85 +4,198 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>Kaleidoscope Camera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
   <style>
     :root {
-      --ui-bg: rgba(10,10,10,0.55);
-      --ui-fg: #fff;
-      --accent: #fff;
-      --pill-bg: rgba(35,35,35,0.92);
-      --pill-border: rgba(255,255,255,0.08);
-      --blue: #2d7dff;
+      /* Material Design 3 dark color tokens */
+      --md-primary: #A8C7FA;
+      --md-on-primary: #062E6F;
+      --md-primary-container: #1B4B91;
+      --md-on-primary-container: #D3E3FD;
+      --md-surface: #131316;
+      --md-surface-container: #1E1F22;
+      --md-surface-container-high: #282A2D;
+      --md-surface-container-highest: #333537;
+      --md-on-surface: #E3E2E6;
+      --md-on-surface-variant: #C4C6D0;
+      --md-outline: #8E9099;
+      --md-outline-variant: #44474F;
+      --md-secondary-container: #3C4759;
+      --md-on-secondary-container: #D7E3F8;
+      --md-tertiary: #E4BAD4;
+      /* Elevation overlay opacities for dark theme */
+      --md-elevation-1: 0 1px 3px 1px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
+      --md-elevation-2: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
+      --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
+      /* Shape */
+      --md-shape-xs: 4px;
+      --md-shape-s: 8px;
+      --md-shape-m: 12px;
+      --md-shape-l: 16px;
+      --md-shape-xl: 28px;
+      --md-shape-full: 9999px;
     }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
     html, body {
-      margin: 0; height: 100%; background: #000; color: var(--ui-fg);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      margin: 0; height: 100%; background: #000; color: var(--md-on-surface);
+      font-family: 'Roboto', system-ui, -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
     }
+
     /* Stage */
     #app { position: fixed; inset: 0; overflow: hidden; }
-    #stage { position: absolute; inset: 0; background:#000; }
-    canvas { width: 100%; height: 100%; display:block; }
-    video { position: absolute; width: 1px; height: 1px; left:-9999px; top:-9999px; opacity:0; }
+    #stage { position: absolute; inset: 0; background: #000; }
+    canvas { width: 100%; height: 100%; display: block; }
+    video { position: absolute; width: 1px; height: 1px; left: -1px; top: -1px; opacity: 0; pointer-events: none; }
 
-    /* Top controls bar (excluded from capture since we export canvas only) */
+    /* Top app bar — Material Design 3 surface-container */
     .topbar {
       position: absolute; top: 0; left: 0; right: 0; z-index: 10;
       display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px;
-      background: linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0));
-      backdrop-filter: blur(8px);
+      padding: 8px 16px;
+      padding-top: calc(8px + env(safe-area-inset-top, 0px));
+      background: rgba(30, 31, 34, 0.82);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--md-outline-variant);
+      transition: opacity 0.25s ease, transform 0.25s ease;
     }
-    .topbar .group { display:flex; align-items:center; gap:10px; }
-    .label { font-size: 12px; opacity: 0.85; white-space: nowrap; letter-spacing: 0.02em; }
-    .title { font-weight: 600; font-size: 13px; opacity: 0.9; }
-    .toggle { appearance: none; width: 36px; height: 22px; border-radius: 999px; position: relative; outline: none; cursor: pointer; background: #444; transition: background .2s; }
-    .toggle:checked { background: var(--blue); }
-    .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background:#fff; border-radius:50%; transition: left .2s; }
-    .toggle:checked::after { left: 17px; }
+    .topbar.hidden {
+      opacity: 0; transform: translateY(-8px); pointer-events: none;
+    }
+    .topbar .group { display: flex; align-items: center; gap: 12px; }
 
-    .btn { background: rgba(20,20,20,0.75); color: var(--ui-fg); border: 1px solid rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 12px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
-    .btn:active { transform: translateY(1px); }
+    .label {
+      font-size: 12px; font-weight: 400; letter-spacing: 0.4px;
+      color: var(--md-on-surface-variant); white-space: nowrap;
+    }
+    .label strong { font-weight: 500; color: var(--md-on-surface); }
+    .title {
+      font-weight: 500; font-size: 16px; letter-spacing: 0.15px;
+      color: var(--md-on-surface);
+    }
 
+    /* Material Design 3 Switch */
+    .toggle {
+      appearance: none; -webkit-appearance: none;
+      width: 52px; height: 32px; border-radius: var(--md-shape-full);
+      position: relative; outline: none; cursor: pointer;
+      background: var(--md-surface-container-highest);
+      border: 2px solid var(--md-outline);
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .toggle:checked {
+      background: var(--md-primary);
+      border-color: var(--md-primary);
+    }
+    .toggle::after {
+      content: ""; position: absolute;
+      top: 50%; left: 6px;
+      transform: translateY(-50%);
+      width: 16px; height: 16px;
+      background: var(--md-outline);
+      border-radius: 50%;
+      transition: left 0.2s cubic-bezier(0.2, 0, 0, 1), width 0.15s ease, height 0.15s ease, background 0.2s ease;
+    }
+    .toggle:checked::after {
+      left: 28px;
+      width: 24px; height: 24px;
+      background: var(--md-on-primary);
+    }
+    .toggle:focus-visible {
+      outline: 2px solid var(--md-primary);
+      outline-offset: 2px;
+    }
+    .toggle:hover::after { opacity: 0.92; }
+
+    /* Material Design 3 Tonal Buttons */
+    .btn {
+      background: var(--md-secondary-container);
+      color: var(--md-on-secondary-container);
+      border: none;
+      padding: 0 16px; height: 36px;
+      border-radius: var(--md-shape-full);
+      cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      letter-spacing: 0.1px;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+      position: relative; overflow: hidden;
+    }
+    .btn .material-icons-round { font-size: 18px; }
+    .btn:hover {
+      background: rgba(60, 71, 89, 0.92);
+      box-shadow: var(--md-elevation-1);
+    }
+    .btn:active {
+      transform: scale(0.97);
+      box-shadow: none;
+    }
+    .btn:focus-visible {
+      outline: 2px solid var(--md-primary);
+      outline-offset: 2px;
+    }
+
+    /* Segments — Material Design 3 Segmented Button */
     .segments-pill {
       position: absolute;
       right: 12px;
-      top: 64px;
+      top: 72px;
       z-index: 10;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding: 8px;
-      border-radius: 18px;
-      background: var(--pill-bg);
-      border: 1px solid var(--pill-border);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      gap: 0;
+      padding: 0;
+      border-radius: var(--md-shape-l);
+      background: rgba(30, 31, 34, 0.88);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--md-outline-variant);
+      box-shadow: var(--md-elevation-2);
+      overflow: hidden;
+      transition: opacity 0.25s ease, transform 0.25s ease;
     }
-    .segments-pill button {
-      width: 38px;
-      height: 34px;
-      border-radius: 14px;
-      border: none;
-      color: rgba(255,255,255,0.75);
-      background: transparent;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .segments-pill button.active {
-      background: rgba(45,125,255,0.25);
-      color: #e6f0ff;
-      box-shadow: inset 0 0 0 1px rgba(45,125,255,0.5);
+    .segments-pill.hidden {
+      opacity: 0; transform: translateX(8px); pointer-events: none;
     }
     .segments-pill .pill-label {
-      font-size: 11px;
-      opacity: 0.7;
+      font-size: 11px; font-weight: 500;
+      color: var(--md-on-surface-variant);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.5px;
       text-align: center;
-      margin-bottom: 2px;
+      padding: 10px 12px 6px;
+    }
+    .segments-pill button {
+      width: 48px; height: 40px;
+      border: none;
+      color: var(--md-on-surface-variant);
+      background: transparent;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      letter-spacing: 0.1px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+      position: relative;
+    }
+    .segments-pill button:hover {
+      background: rgba(196, 198, 208, 0.08);
+    }
+    .segments-pill button.active {
+      background: var(--md-secondary-container);
+      color: var(--md-on-secondary-container);
+    }
+    .segments-pill button:focus-visible {
+      outline: 2px solid var(--md-primary);
+      outline-offset: -2px;
+    }
+    .segments-pill button:last-child {
+      border-radius: 0 0 var(--md-shape-l) var(--md-shape-l);
     }
 
-    /* Shutter */
+    /* Shutter — Material Design 3 FAB styling */
     .shutter-wrap {
       position: absolute;
       left: 50%;
@@ -92,17 +205,73 @@
       pointer-events: none;
     }
     .shutter-wrap .shutter { pointer-events: auto; }
-    .shutter { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.25); display:grid; place-items:center; box-shadow: 0 8px 30px rgba(0,0,0,0.5); backdrop-filter: blur(6px); }
-    .shutter-inner { width: 60px; height: 60px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.06); }
-    .shutter:active .shutter-inner { transform: scale(0.96); }
+    .shutter {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--md-primary-container);
+      border: none;
+      display: grid; place-items: center;
+      box-shadow: var(--md-elevation-3);
+      cursor: pointer;
+      transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .shutter:hover {
+      box-shadow: var(--md-elevation-3), 0 0 0 4px rgba(168, 199, 250, 0.15);
+      background: rgba(27, 75, 145, 0.95);
+    }
+    .shutter:active {
+      transform: scale(0.94);
+      box-shadow: var(--md-elevation-1);
+    }
+    .shutter:focus-visible {
+      outline: 3px solid var(--md-primary);
+      outline-offset: 3px;
+    }
+    .shutter-inner {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--md-on-primary-container);
+      display: grid; place-items: center;
+      transition: transform 0.15s ease;
+    }
+    .shutter-inner .material-icons-round {
+      font-size: 28px; color: var(--md-primary-container);
+    }
+    .shutter:active .shutter-inner { transform: scale(0.94); }
 
-    /* Help hint at the top-left */
-    .hint { position:absolute; left:12px; top:60px; z-index:10; font-size:12px; opacity:.75; background: rgba(0,0,0,0.55); padding:6px 8px; border-radius: 10px; }
+    /* Hint — Material Design 3 snackbar style */
+    .hint {
+      position: absolute; left: 16px; top: 68px; z-index: 10;
+      font-size: 13px; font-weight: 400; letter-spacing: 0.25px;
+      color: var(--md-on-surface);
+      background: var(--md-surface-container-highest);
+      padding: 10px 16px;
+      border-radius: var(--md-shape-s);
+      box-shadow: var(--md-elevation-2);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      max-width: 260px; line-height: 1.4;
+    }
+    .hint.hidden {
+      opacity: 0; transform: translateY(-4px); pointer-events: none;
+    }
+
+    /* Capture flash overlay */
+    .capture-flash {
+      position: fixed; inset: 0; z-index: 100;
+      background: #fff; opacity: 0;
+      pointer-events: none;
+      animation: flash 0.35s ease-out;
+    }
+    @keyframes flash {
+      0% { opacity: 0.6; }
+      100% { opacity: 0; }
+    }
 
     @media (max-width: 480px) {
-      .topbar { flex-wrap: wrap; gap:6px; }
-      .segments-pill { top: 70px; }
-      .hint { display:none; }
+      .topbar { flex-wrap: wrap; gap: 8px; padding: 6px 12px; padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
+      .title { font-size: 14px; }
+      .segments-pill { top: 68px; right: 8px; }
+      .hint { display: none; }
+      .btn { height: 32px; padding: 0 12px; font-size: 13px; }
+      .btn .btn-text { display: none; }
     }
   </style>
 </head>
@@ -120,16 +289,16 @@
         <span class="title">Kaleidoscope</span>
         <span class="label">Zoom <strong id="zoomVal">1.20×</strong></span>
         <span class="label">Mirror</span>
-        <input id="mirror" class="toggle" type="checkbox" checked />
+        <input id="mirror" class="toggle" type="checkbox" checked aria-label="Mirror toggle" />
       </div>
       <div class="group">
-        <button id="fsBtn" class="btn" title="Toggle Fullscreen">⤢ Fullscreen</button>
-        <button id="flipBtn" class="btn" title="Switch camera">⇄ Flip</button>
+        <button id="fsBtn" class="btn" title="Toggle Fullscreen"><span class="material-icons-round">fullscreen</span><span class="btn-text">Fullscreen</span></button>
+        <button id="flipBtn" class="btn" title="Switch camera"><span class="material-icons-round">cameraswitch</span><span class="btn-text">Flip</span></button>
       </div>
     </div>
 
     <div class="segments-pill" id="segmentsPill" role="group" aria-label="Segments">
-      <div class="pill-label">Segments</div>
+      <div class="pill-label">Slices</div>
       <button type="button" data-value="6">6</button>
       <button type="button" data-value="8">8</button>
       <button type="button" data-value="10">10</button>
@@ -137,11 +306,11 @@
       <button type="button" data-value="16">16</button>
     </div>
 
-    <div class="hint">Pinch with two fingers to zoom. Captures exclude controls.</div>
+    <div class="hint" id="hint">Pinch to zoom &middot; Tap to hide controls</div>
 
     <div class="shutter-wrap">
       <button id="shutter" class="shutter" title="Capture photo" aria-label="Capture photo">
-        <div class="shutter-inner"></div>
+        <div class="shutter-inner"><span class="material-icons-round">photo_camera</span></div>
       </button>
     </div>
   </div>
@@ -265,6 +434,12 @@
 
     // Capture canvas as PNG and try to save to device
     function capture(){
+      // Flash animation
+      const flash = document.createElement('div');
+      flash.className = 'capture-flash';
+      document.body.appendChild(flash);
+      flash.addEventListener('animationend', () => flash.remove());
+
       canvas.toBlob(blob => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -318,13 +493,13 @@
     const stage = document.getElementById('stage');
     const controls = document.getElementById('controls');
     let controlsVisible = true;
-    const hint = document.querySelector('.hint');
+    const hint = document.getElementById('hint');
     stage.addEventListener('click', (e) => {
-      if (e.target.closest('#shutter') || e.target.closest('.topbar') || e.target.closest('.segments-pill')) return; // ignore UI taps
+      if (e.target.closest('#shutter') || e.target.closest('.topbar') || e.target.closest('.segments-pill')) return;
       controlsVisible = !controlsVisible;
-      controls.style.display = controlsVisible ? 'flex' : 'none';
-      segmentsPill.style.display = controlsVisible ? 'flex' : 'none';
-      hint.style.display = controlsVisible ? 'block' : 'none';
+      controls.classList.toggle('hidden', !controlsVisible);
+      segmentsPill.classList.toggle('hidden', !controlsVisible);
+      hint.classList.toggle('hidden', !controlsVisible);
     });
 
     let pinchStartDistance = null;
